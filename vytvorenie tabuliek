@@ -1,0 +1,164 @@
+
+/* 
+ - vytvorenie tabuliek zákazníkov, produktov, objednávok a objednaných produktov pomocou DDL
+ - následné vytvorenie automatického inkrementu IDčiek pomocou "SEQUENCE" a spustenie sekvencii cez TRIGGRE
+ - naplnenie tabuliek testovacími dátamy
+
+ */
+CREATE TABLE Customers 
+(
+    customer_id INT PRIMARY KEY,
+    first_name VARCHAR2(50),
+    last_name VARCHAR2(50),
+    email VARCHAR2(100) UNIQUE NOT NULL
+);
+
+CREATE SEQUENCE  "NOVASCHEMA"."SEQ_CUSTOMERS"  MINVALUE 1 MAXVALUE 9999999999999999999999999999 INCREMENT BY 1 START WITH 1 CACHE 20 NOORDER  NOCYCLE  NOKEEP  NOSCALE  GLOBAL ;
+
+CREATE OR REPLACE TRIGGER trg_customers_seq
+BEFORE INSERT ON Customers
+FOR EACH ROW
+BEGIN
+    SELECT SEQ_CUSTOMERS.NEXTVAL
+    INTO :NEW.customer_id
+    FROM dual;
+END;
+
+INSERT INTO customers (first_name, last_name, email) VALUES ('Connor', 'McDavid', 'connor.mcdavid@gmail.com');
+INSERT INTO customers (first_name, last_name, email) VALUES ('Nathan', 'MacKinnon', 'nathan.mackinnon@gmail.com');
+INSERT INTO customers (first_name, last_name, email) VALUES ('Sidney', 'Crosby', 'sidney.crosby@gmail.com');
+INSERT INTO customers (first_name, last_name, email) VALUES ('Connor', 'Bedard', 'connor.bedard@gmail.com');
+INSERT INTO customers (first_name, last_name, email) VALUES ('Adam', 'Fantilli', 'adam.fantilli@gmail.com');
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+CREATE TABLE Products 
+(
+    product_id INT PRIMARY KEY,
+    product_name VARCHAR2(100) NOT NULL,
+    price NUMBER(10, 2),
+    stock_quantity INT,
+    description CLOB
+);
+
+CREATE SEQUENCE  "NOVASCHEMA"."SEQ_PRODUCTS"  MINVALUE 1 MAXVALUE 9999999999999999999999999999 INCREMENT BY 1 START WITH 1 CACHE 20 NOORDER  NOCYCLE  NOKEEP  NOSCALE  GLOBAL ;
+
+CREATE OR REPLACE TRIGGER trg_products_seq
+BEFORE INSERT ON Products
+FOR EACH ROW
+BEGIN
+    SELECT SEQ_PRODUCTS.NEXTVAL
+    INTO :NEW.product_id
+    FROM dual;
+END;
+
+INSERT INTO Products (product_name, price, stock_quantity, description) VALUES ('Drevená hokejka Bauer I3000 Senior', 31, 10, '');
+INSERT INTO Products (product_name, price, stock_quantity, description) VALUES ('Drevená hokejka Bauer I3000 Junior', 28, 10, '');
+INSERT INTO Products (product_name, price, stock_quantity, description) VALUES ('Drevená hokejka Bauer I3000 Intermediate', 29, 10, '');
+INSERT INTO Products (product_name, price, stock_quantity, description) VALUES ('Drevená hokejka CCM Senior', 44, 10, '');
+INSERT INTO Products (product_name, price, stock_quantity, description) VALUES ('Drevená hokejka CCM I3000 Junior', 40, 10, '');
+INSERT INTO Products (product_name, price, stock_quantity, description) VALUES ('Drevená hokejka CCM I3000 Intermediate', 42, 10, '');
+INSERT INTO Products (product_name, price, stock_quantity, description) VALUES ('Kompozitová hokejka Bauer X Series Senior', 72, 10, '');
+INSERT INTO Products (product_name, price, stock_quantity, description) VALUES ('Kompozitová hokejka Bauer X Series Junior', 64, 10, '');
+INSERT INTO Products (product_name, price, stock_quantity, description) VALUES ('Kompozitová hokejka Bauer X Series Intermediate', 68, 10, '');
+INSERT INTO Products (product_name, price, stock_quantity, description) VALUES ('Kompozitová hokejka CCM Senior', 150, 10, '');
+INSERT INTO Products (product_name, price, stock_quantity, description) VALUES ('Kompozitová hokejka CCM Junior', 120, 10, '');
+INSERT INTO Products (product_name, price, stock_quantity, description) VALUES ('Kompozitová hokejka CCM Intermediate', 135, 10, '');
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+CREATE TABLE Orders 
+(
+    order_id INT PRIMARY KEY,
+    customer_id INT NOT NULL,
+    order_date DATE,
+    total_amount NUMBER(10, 2),
+    status VARCHAR2(50),
+    FOREIGN KEY (customer_id) REFERENCES Customers(customer_id)
+);
+
+CREATE SEQUENCE  "NOVASCHEMA"."SEQ_ORDERS"  MINVALUE 1 MAXVALUE 9999999999999999999999999999 INCREMENT BY 1 START WITH 1 CACHE 20 NOORDER  NOCYCLE  NOKEEP  NOSCALE  GLOBAL ;
+
+CREATE OR REPLACE TRIGGER trg_orders_seq
+BEFORE INSERT ON Orders
+FOR EACH ROW
+BEGIN
+    SELECT SEQ_ORDERS.NEXTVAL
+    INTO :NEW.order_id
+    FROM dual;
+END;
+
+/* Triger na automatické vloženie dátumu pri vložení záznamu - nakoniec disable-nutý, lebo potrebujem rôzne dátumy */
+CREATE OR REPLACE TRIGGER trg_order_date
+BEFORE INSERT ON Orders
+FOR EACH ROW
+BEGIN
+:NEW.order_date := SYSDATE;
+END;
+
+
+INSERT INTO orders (customer_id, order_date, total_amount, status) VALUES (1,'03.06.24', 0, '0');
+INSERT INTO orders (customer_id, order_date, total_amount, status) VALUES (2,'04.06.24', 0, '0');
+INSERT INTO orders (customer_id, order_date, total_amount, status) VALUES (2,'06.06.24', 0, '0');
+INSERT INTO orders (customer_id, order_date, total_amount, status) VALUES (3,'03.06.24', 0, '0');
+INSERT INTO orders (customer_id, order_date, total_amount, status) VALUES (3,'05.06.24', 0, '0');
+INSERT INTO orders (customer_id, order_date, total_amount, status) VALUES (3,'06.06.24', 0, '0');
+INSERT INTO orders (customer_id, order_date, total_amount, status) VALUES (4,'04.06.24', 0, '0');
+INSERT INTO orders (customer_id, order_date, total_amount, status) VALUES (5,'06.06.24', 0, '0');
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+CREATE TABLE Order_Items 
+(
+    order_item_id INT PRIMARY KEY,
+    order_id INT,
+    product_id INT,
+    quantity INT,
+    unit_price NUMBER(10, 2),
+    FOREIGN KEY (order_id) REFERENCES Orders(order_id),
+    FOREIGN KEY (product_id) REFERENCES Products(product_id)
+);
+
+CREATE SEQUENCE  "NOVASCHEMA"."SEQ_ORDER_ITEM"  MINVALUE 1 MAXVALUE 9999999999999999999999999999 INCREMENT BY 1 START WITH 1 CACHE 20 NOORDER  NOCYCLE  NOKEEP  NOSCALE  GLOBAL ;
+
+CREATE OR REPLACE TRIGGER trg_orders_item_seq
+BEFORE INSERT ON Order_Items
+FOR EACH ROW
+BEGIN
+    SELECT SEQ_ORDER_ITEM.NEXTVAL
+    INTO :NEW.order_item_id
+    FROM dual;
+END;
+
+/* Trigger, ktorý aktualizuje celkovú sumu objednávky podla produktov, ktoré vkladáme alebo odstraňujeme */
+CREATE OR REPLACE TRIGGER trg_update_total_amount
+AFTER INSERT OR UPDATE OR DELETE ON Order_Items
+FOR EACH ROW
+DECLARE
+    order_total_amount NUMBER(10, 2);
+BEGIN
+    IF INSERTING OR UPDATING THEN
+        SELECT total_amount INTO order_total_amount FROM Orders WHERE order_id = :NEW.order_id;
+        
+        UPDATE Orders
+        SET total_amount = (order_total_amount + (:NEW.quantity * :NEW.unit_price))
+        WHERE order_id = :NEW.order_id;
+        
+    ELSIF DELETING THEN
+        SELECT total_amount INTO order_total_amount FROM Orders WHERE order_id = :OLD.order_id;
+        
+        UPDATE Orders
+        SET total_amount = (order_total_amount - (:OLD.quantity * :OLD.unit_price))
+        WHERE order_id = :OLD.order_id;
+    END IF;
+END;
+
+
+INSERT INTO Order_Items (order_id, product_id, quantity, unit_price) VALUES (1, 10, 4, 150);
+INSERT INTO Order_Items (order_id, product_id, quantity, unit_price) VALUES (1, 11, 2, 120);
+INSERT INTO Order_Items (order_id, product_id, quantity, unit_price) VALUES (2, 7, 3, 72);
+INSERT INTO Order_Items (order_id, product_id, quantity, unit_price) VALUES (3, 7, 1, 72);
+INSERT INTO Order_Items (order_id, product_id, quantity, unit_price) VALUES (4, 8, 3, 64);
+INSERT INTO Order_Items (order_id, product_id, quantity, unit_price) VALUES (5, 8, 2, 64);
+INSERT INTO Order_Items (order_id, product_id, quantity, unit_price) VALUES (6, 8, 3, 64);
+INSERT INTO Order_Items (order_id, product_id, quantity, unit_price) VALUES (7, 10, 2, 150);
+INSERT INTO Order_Items (order_id, product_id, quantity, unit_price) VALUES (8, 7, 3, 72);
+
+
