@@ -1,0 +1,57 @@
+
+/* Vytvorenie procedúry  na zistenie celkovej sumy predaného produktu za určité časové obdobie */
+/* vstupné parametre sú ID produktu, dátum od, dátum do a výstup je celková suma získaná za dáné obdobie z daného produktu */
+
+CREATE OR REPLACE PROCEDURE calculate_product_amount 
+(
+    i_product_id IN INT,
+    i_start_date IN DATE,
+    i_end_date IN DATE,
+    o_total_price OUT NUMBER
+) AS
+BEGIN
+
+    IF i_product_id IS NULL THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Product ID cannot be NULL.');
+    END IF;
+    
+    IF i_start_date IS NULL OR i_end_date IS NULL THEN
+        RAISE_APPLICATION_ERROR(-20002, 'Start date and end date cannot be NULL.');
+    END IF;
+
+    o_total_price := 0;
+
+    SELECT NVL(SUM(oi.quantity * oi.unit_price), 0)
+    INTO o_total_price
+    FROM orders o
+    LEFT JOIN order_items oi ON o.order_id = oi.order_id
+    WHERE oi.product_id = i_product_id AND o.order_date BETWEEN i_start_date AND i_end_date;
+
+    IF o_total_price IS NULL THEN
+            RAISE_APPLICATION_ERROR(-20003, 'No data found for the specified criteria.');
+    END IF;
+
+
+    EXCEPTION
+    
+    WHEN NO_DATA_FOUND THEN
+        o_total_price := 0;
+        DBMS_OUTPUT.PUT_LINE('No data found!');
+    
+    WHEN OTHERS THEN
+        RAISE_APPLICATION_ERROR(-20000, 'An error occurred: ' || SQLERRM);
+    
+END;
+    
+
+
+/* volanie procedúry */
+
+SET SERVEROUTPUT ON;    
+DECLARE
+    v_total_price NUMBER := 0;
+BEGIN
+    calculate_product_amount(7, TO_DATE('03.06.2024', 'dd.mm.rr'), TO_DATE('09.06.2024', 'dd.mm.rr'), v_total_price);
+    DBMS_OUTPUT.PUT_LINE('Total price: ' || v_total_price);
+END;
+
